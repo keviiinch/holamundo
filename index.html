@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Hola Mundo! - Experiencia Visual Interactiva</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600;800;900&family=Montserrat:wght@400;700;900&family=Pacifico&family=Press+Start+2P&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        fira: ['"Fira Code"', 'monospace'],
+                        pacifico: ['Pacifico', 'cursive'],
+                        retro: ['"Press Start 2P"', 'cursive'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    },
+                    animation: {
+                        'float': 'float 4s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow': 'glow 2s ease-in-out infinite alternate',
+                        'wave': 'wave 2.5s infinite',
+                        'spin-slow': 'spin 12s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        glow: {
+                            '0%': { filter: 'drop-shadow(0 0 15px rgba(99, 102, 241, 0.6))' },
+                            '100%': { filter: 'drop-shadow(0 0 35px rgba(236, 72, 153, 0.9))' }
+                        },
+                        wave: {
+                            '0%, 100%': { transform: 'rotate(0deg)' },
+                            '25%': { transform: 'rotate(14deg)' },
+                            '75%': { transform: 'rotate(-10deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Modern Glassmorphism Styling */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        .dark .glass-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Glitch Effect CSS */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+
+        .glitch-active::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff00c1;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+
+        .glitch-active::after {
+            left: -2px;
+            text-shadow: -2px 0 #00fff9;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim2 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(10px, 9999px, 30px, 0); }
+            20% { clip: rect(40px, 9999px, 10px, 0); }
+            40% { clip: rect(25px, 9999px, 50px, 0); }
+            60% { clip: rect(60px, 9999px, 20px, 0); }
+            80% { clip: rect(15px, 9999px, 80px, 0); }
+            100% { clip: rect(50px, 9999px, 35px, 0); }
+        }
+
+        @keyframes glitch-anim2 {
+            0% { clip: rect(60px, 9999px, 10px, 0); }
+            20% { clip: rect(15px, 9999px, 70px, 0); }
+            40% { clip: rect(50px, 9999px, 30px, 0); }
+            60% { clip: rect(10px, 9999px, 90px, 0); }
+            80% { clip: rect(35px, 9999px, 20px, 0); }
+            100% { clip: rect(70px, 9999px, 45px, 0); }
+        }
+
+        /* Ambient Dynamic Background Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-500 relative overflow-x-hidden">
+
+    <!-- Interactive Background Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Header Navigation -->
+    <header class="relative z-10 w-full max-w-7xl mx-auto px-4 py-4 sm:py-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid me-0 fa-code"></i>
+            </div>
+            <div>
+                <h1 class="text-lg sm:text-xl font-black bg-gradient-to-r from-indigo-500 to-pink-500 bg-clip-text text-transparent">
+                    HolaMundo <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300 font-semibold border border-indigo-300 dark:border-indigo-700">Studio Pro</span>
+                </h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Generador Visual y Presentador Interactivo</p>
+            </div>
+        </div>
+
+        <!-- Right Side Actions & Theme Switcher -->
+        <div class="flex items-center gap-3">
+            <!-- Fullscreen Button -->
+            <button id="fullscreenBtn" title="Modo Presentación Pantalla Completa" class="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all duration-200 border border-slate-300/50 dark:border-slate-700/50">
+                <i class="fa-solid fa-expand text-base"></i>
+            </button>
+
+            <!-- Theme Toggle Switch -->
+            <button id="themeToggleBtn" aria-label="Cambiar tema" class="p-2.5 rounded-xl bg-slate-200/80 dark:bg-slate-800/80 hover:bg-slate-300 dark:hover:bg-slate-700 text-amber-500 dark:text-indigo-400 transition-all duration-200 border border-slate-300/50 dark:border-slate-700/50 flex items-center gap-2">
+                <i id="themeIcon" class="fa-solid fa-moon text-lg"></i>
+                <span id="themeLabel" class="text-xs font-semibold hidden md:inline">Oscuro</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 py-4 flex flex-col gap-6 justify-center">
+
+        <!-- DISPLAY HERO PREVIEW CARD -->
+        <section id="displayArea" class="glass-card rounded-3xl p-8 sm:p-12 md:p-16 flex flex-col items-center justify-center min-h-[280px] sm:min-h-[360px] relative overflow-hidden shadow-2xl transition-all duration-300 group">
+            
+            <!-- Ambient Glow Effect Behind Text -->
+            <div id="ambientGlow" class="absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-indigo-500/20 dark:bg-indigo-500/25 blur-3xl transition-all duration-500 opacity-80 pointer-events-none"></div>
+
+            <!-- Decorative Floating Elements -->
+            <div class="absolute top-4 left-4 text-slate-300 dark:text-slate-700 font-mono text-xs hidden sm:block">
+                &lt;div id="hello-world"&gt;
+            </div>
+            <div class="absolute bottom-4 right-4 text-slate-300 dark:text-slate-700 font-mono text-xs hidden sm:block">
+                &lt;/div&gt;
+            </div>
+
+            <!-- THE MAIN TEXT DISPLAY -->
+            <div class="relative z-10 text-center max-w-full px-2 py-4">
+                <h2 id="mainHeading" 
+                    data-text="¡Hola Mundo!"
+                    class="font-extrabold tracking-tight transition-all duration-300 select-none bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent drop-shadow-sm font-sans animate-float"
+                    style="font-size: 3.5rem; line-height: 1.1;">
+                    ¡Hola Mundo!
+                </h2>
+                <p id="subHeading" class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mt-3 tracking-widest uppercase opacity-80 transition-all duration-300">
+                    Tu ventana al fascinante universo de la programación
+                </p>
+            </div>
+
+            <!-- FAST ACTION OVERLAY BUTTONS -->
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-3 relative z-10">
+                <button id="speakBtn" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-volume-high"></i>
+                    <span>Escuchar</span>
+                </button>
+
+                <button id="confettiBtn" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-pink-500 hover:from-amber-600 hover:to-pink-600 text-white font-semibold text-sm shadow-lg shadow-pink-500/25 hover:shadow-pink-500/40 transition-all duration-200 active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Celebrar</span>
+                </button>
+
+                <button id="copyBtn" class="px-4 py-2.5 rounded-xl bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-900 font-semibold text-sm hover:bg-slate-700 dark:hover:bg-white shadow-md transition-all duration-200 active:scale-95 flex items-center gap-2">
+                    <i id="copyIcon" class="fa-regular fa-copy"></i>
+                    <span id="copyText">Copiar</span>
+                </button>
+
+                <button id="randomizeBtn" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-200 active:scale-95 flex items-center gap-2">
+                    <i class="fa-solid fa-dice"></i>
+                    <span>Aleatorio</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- MULTI-LANGUAGE PRESET BADGES -->
+        <section class="glass-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-md">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-globe text-indigo-500"></i> Idiomas Rápidos:
+            </span>
+            <div class="flex flex-wrap items-center gap-2" id="languagePills">
+                <!-- Pills generated or styled in HTML -->
+                <button data-lang-text="¡Hola Mundo!" data-sub="Español (Spanish)" class="lang-pill px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-indigo-200 dark:border-indigo-800">
+                    🇲🇽 Español
+                </button>
+                <button data-lang-text="Hello World!" data-sub="English" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇺🇸 English
+                </button>
+                <button data-lang-text="Bonjour le monde!" data-sub="Français (French)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇫🇷 Français
+                </button>
+                <button data-lang-text="Hallo Welt!" data-sub="Deutsch (German)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇩🇪 Deutsch
+                </button>
+                <button data-lang-text="Ciao Mondo!" data-sub="Italiano (Italian)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇮🇹 Italiano
+                </button>
+                <button data-lang-text="Olá Mundo!" data-sub="Português (Portuguese)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇧🇷 Português
+                </button>
+                <button data-lang-text="こんにちは世界！" data-sub="Japanese (Konnichiwa sekai)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇯🇵 日本語
+                </button>
+                <button data-lang-text="Привет, мир!" data-sub="Russian (Privet, mir)" class="lang-pill px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 transition-all border border-slate-200 dark:border-slate-800">
+                    🇷🇺 Русский
+                </button>
+            </div>
+        </section>
+
+        <!-- CUSTOMIZATION CONTROL PANEL GRID -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- CONTROL CARD 1: CONTENT & TEXT INPUT -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-slate-200/50 dark:border-slate-800/50">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-indigo-500"></i>
+                        Personalizar Mensaje
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-mono">TEXTO & SUBTÍTULO</span>
+                </div>
+
+                <!-- Text Input Field -->
+                <div>
+                    <label for="textInput" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Mensaje Principal
+                    </label>
+                    <input type="text" id="textInput" value="¡Hola Mundo!" 
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                </div>
+
+                <!-- Subtitle Input Field -->
+                <div>
+                    <label for="subInput" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Subtítulo / Leyenda
+                    </label>
+                    <input type="text" id="subInput" value="Tu ventana al fascinante universo de la programación" 
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all">
+                </div>
+
+                <!-- Font Size Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="fontSizeSlider" class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            Tamaño de Fuente
+                        </label>
+                        <span id="fontSizeVal" class="text-xs font-mono font-bold text-indigo-500">3.5 rem</span>
+                    </div>
+                    <input type="range" id="fontSizeSlider" min="1.8" max="6" step="0.1" value="3.5"
+                        class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                </div>
+            </div>
+
+            <!-- CONTROL CARD 2: TYPOGRAPHY & ANIMATIONS -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-slate-200/50 dark:border-slate-800/50">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-font text-purple-500"></i>
+                        Tipografía y Efecto
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-mono">ESTILO & MOVIMIENTO</span>
+                </div>
+
+                <!-- Font Family Selection -->
+                <div>
+                    <label for="fontSelect" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Estilo de Fuente
+                    </label>
+                    <select id="fontSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all cursor-pointer">
+                        <option value="font-sans">Modern Sans-Serif (Inter)</option>
+                        <option value="font-montserrat">Geometric Modern (Montserrat)</option>
+                        <option value="font-fira">Programador / Code (Fira Code)</option>
+                        <option value="font-pacifico">Manuscrita / Cursive (Pacifico)</option>
+                        <option value="font-serif">Elegante / Classic (Playfair)</option>
+                        <option value="font-retro">Retro 8-Bit Pixel (Press Start)</option>
+                    </select>
+                </div>
+
+                <!-- Animation Effect Selection -->
+                <div>
+                    <label for="animSelect" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                        Efecto de Animación
+                    </label>
+                    <select id="animSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all cursor-pointer">
+                        <option value="animate-float">Flotante Suave (Floating)</option>
+                        <option value="animate-pulse-slow">Pulsación Neón (Pulse)</option>
+                        <option value="animate-glow">Resplandor Gradual (Glow)</option>
+                        <option value="animate-wave">Saludo Ondulado (Wave)</option>
+                        <option value="glitch">Ciberpunk Glitch Effect</option>
+                        <option value="typewriter">Efecto Máquina de Escribir</option>
+                        <option value="none">Sin Animación (Estático)</option>
+                    </select>
+                </div>
+
+                <!-- Card Glow Intensity slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label for="glowSlider" class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                            Resplandor de Fondo
+                        </label>
+                        <span id="glowVal" class="text-xs font-mono font-bold text-purple-500">80%</span>
+                    </div>
+                    <input type="range" id="glowSlider" min="0" max="100" value="80"
+                        class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-600">
+                </div>
+            </div>
+
+            <!-- CONTROL CARD 3: COLOR PALETTE & PRESETS -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-col gap-4 border border-slate-200/50 dark:border-slate-800/50 md:col-span-2 lg:col-span-1">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-palette text-pink-500"></i>
+                        Paleta de Colores
+                    </h3>
+                    <span class="text-[10px] text-slate-400 font-mono">GRADIENTES & SOLIDO</span>
+                </div>
+
+                <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                    Estilos de Degradado Predefinidos
+                </label>
+                
+                <div class="grid grid-cols-2 gap-2" id="gradientPresets">
+                    <button data-gradient="from-indigo-500 via-purple-500 to-pink-500" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Cyber Sunset
+                    </button>
+                    <button data-gradient="from-cyan-400 via-sky-500 to-blue-600" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Oceanic Breeze
+                    </button>
+                    <button data-gradient="from-emerald-400 via-teal-500 to-cyan-500" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-500 text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Emerald Tech
+                    </button>
+                    <button data-gradient="from-amber-400 via-orange-500 to-red-500" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Solar Flare
+                    </button>
+                    <button data-gradient="from-fuchsia-500 via-rose-500 to-amber-400" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 via-rose-500 to-amber-400 text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Neon Neon
+                    </button>
+                    <button data-gradient="from-slate-700 via-slate-900 to-black dark:from-white dark:via-slate-200 dark:to-slate-400" class="gradient-btn p-2.5 rounded-xl bg-gradient-to-r from-slate-700 to-black text-white font-bold text-xs flex items-center justify-center shadow-sm hover:scale-[1.02] active:scale-95 transition-all">
+                        Monochrome
+                    </button>
+                </div>
+
+                <!-- Custom Solid Color Picker Option -->
+                <div class="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+                    <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Color Personalizado Secundario:</span>
+                    <input type="color" id="customColorPicker" value="#6366f1" class="w-9 h-9 rounded-lg border-none cursor-pointer bg-transparent">
+                </div>
+            </div>
+
+        </section>
+
+        <!-- CODE SNIPPET / EXPORT SECTION -->
+        <section class="glass-card rounded-2xl p-6 shadow-xl mb-6 flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-code-merge text-emerald-500"></i>
+                    Código HTML/CSS de tu Personalización
+                </h3>
+                <button id="copyCodeBtn" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition-all flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i>
+                    <span>Copiar Snippet</span>
+                </button>
+            </div>
+            
+            <div class="relative bg-slate-900 text-slate-200 rounded-xl p-4 font-fira text-xs overflow-x-auto border border-slate-800">
+                <code id="codeSnippetOutput">
+                    &lt;h1 class="text-6xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent"&gt;¡Hola Mundo!&lt;/h1&gt;
+                </code>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full max-w-7xl mx-auto px-4 py-6 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/50 dark:border-slate-800/50 mt-auto">
+        <p>Desarrollado para explorar el primer gran paso de todo programador: <strong class="text-indigo-500">¡Hola Mundo!</strong></p>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xl text-xs font-bold">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 dark:text-emerald-600 text-base"></i>
+        <span id="toastMsg">Mensaje copiado al portapapeles</span>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements Reference
+            const htmlElement = document.documentElement;
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeLabel = document.getElementById('themeLabel');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+            const mainHeading = document.getElementById('mainHeading');
+            const subHeading = document.getElementById('subHeading');
+            const ambientGlow = document.getElementById('ambientGlow');
+            const displayArea = document.getElementById('displayArea');
+
+            const textInput = document.getElementById('textInput');
+            const subInput = document.getElementById('subInput');
+            const fontSizeSlider = document.getElementById('fontSizeSlider');
+            const fontSizeVal = document.getElementById('fontSizeVal');
+            const fontSelect = document.getElementById('fontSelect');
+            const animSelect = document.getElementById('animSelect');
+            const glowSlider = document.getElementById('glowSlider');
+            const glowVal = document.getElementById('glowVal');
+
+            const speakBtn = document.getElementById('speakBtn');
+            const confettiBtn = document.getElementById('confettiBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const randomizeBtn = document.getElementById('randomizeBtn');
+            const copyCodeBtn = document.getElementById('copyCodeBtn');
+            const codeSnippetOutput = document.getElementById('codeSnippetOutput');
+
+            const gradientBtns = document.querySelectorAll('.gradient-btn');
+            const langPills = document.querySelectorAll('.lang-pill');
+            const customColorPicker = document.getElementById('customColorPicker');
+
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+
+            // State variables
+            let currentGradient = "from-indigo-500 via-purple-500 to-pink-500";
+            let isGlitch = false;
+            let typewriterTimer = null;
+
+            // 1. THEME SWITCHER
+            function toggleTheme() {
+                if (htmlElement.classList.contains('dark')) {
+                    htmlElement.classList.remove('dark');
+                    themeIcon.className = 'fa-solid fa-sun text-amber-500';
+                    themeLabel.textContent = 'Claro';
+                } else {
+                    htmlElement.classList.add('dark');
+                    themeIcon.className = 'fa-solid fa-moon text-indigo-400';
+                    themeLabel.textContent = 'Oscuro';
+                }
+            }
+
+            themeToggleBtn.addEventListener('click', toggleTheme);
+
+            // 2. FULLSCREEN MODE TOGGLE
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    displayArea.requestFullscreen().catch(err => {
+                        showToast("No se pudo activar el modo pantalla completa.");
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            // 3. TEXT & SUBTITLE UPDATE LOGIC
+            textInput.addEventListener('input', (e) => {
+                const text = e.target.value || "¡Hola Mundo!";
+                updateMainText(text);
+                updateCodeSnippet();
+            });
+
+            subInput.addEventListener('input', (e) => {
+                subHeading.textContent = e.target.value;
+            });
+
+            function updateMainText(text) {
+                mainHeading.setAttribute('data-text', text);
+
+                if (animSelect.value === 'typewriter') {
+                    startTypewriter(text);
+                } else {
+                    mainHeading.textContent = text;
+                }
+            }
+
+            // 4. FONT SIZE SLIDER CONTROL
+            fontSizeSlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                fontSizeVal.textContent = `${val} rem`;
+                mainHeading.style.fontSize = `${val}rem`;
+                updateCodeSnippet();
+            });
+
+            // 5. FONT FAMILY SELECTOR
+            fontSelect.addEventListener('change', (e) => {
+                // Remove all font family classes
+                mainHeading.classList.remove('font-sans', 'font-montserrat', 'font-fira', 'font-pacifico', 'font-serif', 'font-retro');
+                mainHeading.classList.add(e.target.value);
+                updateCodeSnippet();
+            });
+
+            // 6. ANIMATION EFFECT SELECTOR
+            animSelect.addEventListener('change', (e) => {
+                const anim = e.target.value;
+                
+                // Clear existing animation states
+                mainHeading.classList.remove('animate-float', 'animate-pulse-slow', 'animate-glow', 'animate-wave', 'glitch-text', 'glitch-active');
+                mainHeading.style.animation = '';
+                isGlitch = false;
+
+                if (typewriterTimer) clearInterval(typewriterTimer);
+
+                if (anim === 'glitch') {
+                    mainHeading.classList.add('glitch-text', 'glitch-active');
+                    mainHeading.textContent = textInput.value || "¡Hola Mundo!";
+                } else if (anim === 'typewriter') {
+                    startTypewriter(textInput.value || "¡Hola Mundo!");
+                } else if (anim !== 'none') {
+                    mainHeading.classList.add(anim);
+                    mainHeading.textContent = textInput.value || "¡Hola Mundo!";
+                } else {
+                    mainHeading.textContent = textInput.value || "¡Hola Mundo!";
+                }
+                updateCodeSnippet();
+            });
+
+            function startTypewriter(fullText) {
+                if (typewriterTimer) clearInterval(typewriterTimer);
+                mainHeading.textContent = "";
+                let i = 0;
+                typewriterTimer = setInterval(() => {
+                    if (i < fullText.length) {
+                        mainHeading.textContent += fullText.charAt(i);
+                        i++;
+                    } else {
+                        clearInterval(typewriterTimer);
+                    }
+                }, 120);
+            }
+
+            // 7. GLOW INTENSITY SLIDER
+            glowSlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                glowVal.textContent = `${val}%`;
+                ambientGlow.style.opacity = val / 100;
+            });
+
+            // 8. GRADIENT PRESET BUTTONS
+            gradientBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const gradient = btn.getAttribute('data-gradient');
+                    setGradient(gradient);
+                });
+            });
+
+            function setGradient(gradientClass) {
+                // Reset custom color inline styling
+                mainHeading.style.color = '';
+                mainHeading.style.backgroundImage = '';
+
+                // Remove existing gradient classes
+                const classList = Array.from(mainHeading.classList);
+                classList.forEach(c => {
+                    if (c.startsWith('from-') || c.startsWith('via-') || c.startsWith('to-')) {
+                        mainHeading.classList.remove(c);
+                    }
+                });
+
+                // Add new gradient classes
+                const newClasses = gradientClass.split(' ');
+                newClasses.forEach(c => mainHeading.classList.add(c));
+                currentGradient = gradientClass;
+                updateCodeSnippet();
+            }
+
+            // Custom Color Picker
+            customColorPicker.addEventListener('input', (e) => {
+                const color = e.target.value;
+                mainHeading.style.backgroundImage = 'none';
+                mainHeading.style.color = color;
+                mainHeading.style.webkitTextFillColor = color;
+                updateCodeSnippet();
+            });
+
+            // 9. MULTI-LANGUAGE PRESET SELECTION
+            langPills.forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const text = pill.getAttribute('data-lang-text');
+                    const sub = pill.getAttribute('data-sub');
+
+                    textInput.value = text;
+                    subInput.value = sub;
+                    subHeading.textContent = sub;
+
+                    updateMainText(text);
+                    triggerConfettiSmall();
+                    updateCodeSnippet();
+                });
+            });
+
+            // 10. TEXT TO SPEECH (WEB SPEECH API)
+            speakBtn.addEventListener('click', () => {
+                const text = textInput.value || "¡Hola Mundo!";
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel(); // Stop any active speech
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    
+                    // Attempt to detect language or fallback to Spanish
+                    utterance.lang = text.includes('Hello') ? 'en-US' : 
+                                     text.includes('Bonjour') ? 'fr-FR' : 
+                                     text.includes('Hallo') ? 'de-DE' : 
+                                     text.includes('Ciao') ? 'it-IT' : 
+                                     text.includes('こんにちは') ? 'ja-JP' : 'es-ES';
+                    
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    window.speechSynthesis.speak(utterance);
+
+                    // Visual pulse feedback
+                    speakBtn.classList.add('scale-110');
+                    setTimeout(() => speakBtn.classList.remove('scale-110'), 300);
+                } else {
+                    showToast("La síntesis de voz no está soportada en este navegador.");
+                }
+            });
+
+            // 11. CONFETTI CELEBRATION
+            confettiBtn.addEventListener('click', () => {
+                triggerConfettiFull();
+            });
+
+            function triggerConfettiFull() {
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            }
+
+            function triggerConfettiSmall() {
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 30,
+                        spread: 50,
+                        origin: { y: 0.7 }
+                    });
+                }
+            }
+
+            // 12. COPY TEXT TO CLIPBOARD
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = mainHeading.textContent;
+                copyToClipboard(textToCopy);
+                showToast("¡Texto copiado al portapapeles!");
+            });
+
+            copyCodeBtn.addEventListener('click', () => {
+                const codeText = codeSnippetOutput.textContent;
+                copyToClipboard(codeText);
+                showToast("¡Código snippet copiado!");
+            });
+
+            function copyToClipboard(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text);
+                } else {
+                    // Fallback for iFrame or non-HTTPS environments
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                    } catch (err) {
+                        console.error('Fallback copy failed', err);
+                    }
+                    document.body.removeChild(textArea);
+                }
+            }
+
+            // 13. RANDOMIZE / SURPRISE ME
+            randomizeBtn.addEventListener('click', () => {
+                // Random Font
+                const fonts = fontSelect.options;
+                const randomFontIndex = Math.floor(Math.random() * fonts.length);
+                fontSelect.selectedIndex = randomFontIndex;
+                fontSelect.dispatchEvent(new Event('change'));
+
+                // Random Animation
+                const anims = animSelect.options;
+                const randomAnimIndex = Math.floor(Math.random() * anims.length);
+                animSelect.selectedIndex = randomAnimIndex;
+                animSelect.dispatchEvent(new Event('change'));
+
+                // Random Gradient
+                const randomGradIndex = Math.floor(Math.random() * gradientBtns.length);
+                gradientBtns[randomGradIndex].click();
+
+                // Random Confetti
+                triggerConfettiSmall();
+                showToast("¡Estilo aleatorio aplicado!");
+            });
+
+            // 14. SHOW TOAST NOTIFICATION
+            let toastTimer;
+            function showToast(message) {
+                toastMsg.textContent = message;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 3000);
+            }
+
+            // 15. UPDATE CODE SNIPPET PREVIEW
+            function updateCodeSnippet() {
+                const fontClass = fontSelect.value;
+                const textVal = textInput.value || "¡Hola Mundo!";
+                const sizeVal = fontSizeSlider.value;
+
+                let code = `<h1 class="text-[${sizeVal}rem] ${fontClass} bg-gradient-to-r ${currentGradient} bg-clip-text text-transparent">\n  ${escapeHtml(textVal)}\n</h1>`;
+                codeSnippetOutput.textContent = code;
+            }
+
+            function escapeHtml(string) {
+                return String(string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            // Initialize code snippet
+            updateCodeSnippet();
+
+            // 16. AMBIENT PARTICLES CANVAS BACKGROUND
+            const canvas = document.getElementById('bgCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2.5 + 0.5;
+                    this.speedX = (Math.random() - 0.5) * 0.5;
+                    this.speedY = (Math.random() - 0.5) * 0.5;
+                    this.opacity = Math.random() * 0.5 + 0.2;
+                }
+
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+
+                    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                }
+
+                draw() {
+                    const isDark = htmlElement.classList.contains('dark');
+                    ctx.fillStyle = isDark ? `rgba(129, 140, 248, ${this.opacity})` : `rgba(99, 102, 241, ${this.opacity * 0.6})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Populate initial ambient particles
+            for (let i = 0; i < 45; i++) {
+                particles.push(new Particle());
+            }
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animateParticles);
+            }
+
+            // Start animation loop on window load
+            animateParticles();
+        });
+    </script>
+</body>
+</html>
